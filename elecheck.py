@@ -9,13 +9,39 @@ PAST_YEARS_ELIGIBLE = [
     "Labs2016",
 ]
 
+ENUM_WORKED = {
+    '59709335', # classic, labs
+}
+
+ENUM_NOT_WORKED = {
+    '60411539', # (?) classic, labs
+}
+
+ENUM_MAYBE_WORKED = {
+    '176686787', # (?) classic, labs
+}
+
+def parse_bool(s):
+    return s == 'True' or s == 't'
+
+
+def parse_worked(w):
+    if w in ENUM_WORKED or w == 'This shift was worked':
+        return True
+    elif w == "Staffer didn\'t show up" or w in ENUM_NOT_WORKED:
+        return False
+    elif w == "SELECT A STATUS" or w in ENUM_MAYBE_WORKED:
+        return None
+    else:
+        pass
+        #print("Unknown WORKED value: " + w)
 
 class Attendee:
     def __init__(self, id, placeholder, first_name, last_name, email, birthdate,
-                 badge_num, badge_type, badge_status, ribbon, can_spam,
-                 staffing, nonshift_hours, past_years, hotel_eligible, **kwargs):
+                 badge_num, badge_type, ribbon, can_spam, staffing, nonshift_hours,
+                 past_years, badge_status='', hotel_eligible=False, **kwargs):
         self.id = id
-        self.placeholder = (placeholder == 'True')
+        self.placeholder = parse_bool(placeholder)
         self.first_name = first_name
         self.last_name = last_name
         self.email = email
@@ -24,11 +50,11 @@ class Attendee:
         self.badge_type = badge_type
         self.badge_status = badge_status
         self.ribbon = ribbon
-        self.can_spam = (can_spam == 'True')
-        self.staffing = (staffing == 'True')
+        self.can_spam = parse_bool(can_spam)
+        self.staffing = parse_bool(staffing)
         self.nonshift_hours = float(nonshift_hours)
         self.past_years = past_years and json.loads(past_years) or []
-        self.hoteL_eligible = (hotel_eligible == 'True')
+        self.hotel_eligible = parse_bool(hotel_eligible)
         self.shifts = []
 
     def eligible_past_years(self):
@@ -62,7 +88,6 @@ class Attendee:
         return not self.eligible() and self.maybe_eligible() \
         and (not self.eligible_before() or not self.worked_two_events())
 
-
 class Job:
     def __init__(self, id, type, name, description, location, start_time,
                  duration, weight, slots, restricted, extra15):
@@ -75,8 +100,8 @@ class Job:
         self.duration = float(duration) # hours
         self.weight = float(weight)
         self.slots = slots
-        self.restricted = (restricted == 'True')
-        self.extra15 = (extra15 == 'True')
+        self.restricted = parse_bool(restricted)
+        self.extra15 = parse_bool(extra15)
 
     def hours(self):
         return (self.duration + (.25 if self.extra15 else 0)) * self.weight
@@ -88,7 +113,7 @@ class Shift:
         self.job = job
         self.attendee = attendee
         # Yes => True, No => False, not yet set => None
-        self.worked = (worked == "This shift was worked" or (None if worked == "SELECT A STATUS" else False))
+        self.worked = parse_worked(worked)
         self.raw_worked = worked
         self.rating = rating
         self.comment = comment
