@@ -106,33 +106,39 @@ def main():
 
     assert sum((len(l) for l in by_name.values())) == sum((len(l) for l in by_email.values())) == sum((len(l) for l in by_lname.values()))
 
+    eligible = 0
+    ineligible = 0
+
     with open("final_eligible.csv", "w", newline='') as f:
         fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'nonshift_hours', 'worked_hours',
                   'maybe_worked_hours', 'worked_other_event', 'review']
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
-        for l in by_name.values():
-            for person in l:
-                if person.eligible():
-                    writer.writerow({
-                        'id': person.id,
-                        'first_name': person.first_name,
-                        'last_name': person.last_name,
-                        'email': person.email,
-                        'can_spam': person.can_spam,
-                        'nonshift_hours': person.nonshift_hours,
-                        'worked_hours': person.worked_hours,
-                        'maybe_worked_hours': person.maybe_worked_hours,
-                        'worked_other_event': person.worked_other_event,
-                        'review': person.review
-                    })
+        for person in deduped.values():
+            if person.eligible():
+                eligible += 1
+                writer.writerow({
+                    'id': person.id,
+                    'first_name': person.first_name,
+                    'last_name': person.last_name,
+                    'email': person.email,
+                    'can_spam': person.can_spam,
+                    'nonshift_hours': person.nonshift_hours,
+                    'worked_hours': person.worked_hours,
+                    'maybe_worked_hours': person.maybe_worked_hours,
+                    'worked_other_event': person.worked_other_event,
+                    'review': person.review
+                })
+            else:
+                ineligible += 1
+
+    print("Eligible: {}\nIneligible: {}\nTotal: {}".format(eligible, ineligible, len(deduped)))
 
     print("Auto-merged staffers (same name and e-mail):")
-    for l in by_name.values():
-        for p in l:
-            if len(p.others):
-                hours_str = ' + '.join((str(o.nonshift_hours + o.worked_hours) for o in [p]+p.others))
-                print(" * {:20s} ({} staffers with {} hours)".format(p.full_name(), len(p.others)+1, hours_str))
+    for p in deduped.values():
+        if len(p.others):
+            hours_str = ' + '.join((str(o.nonshift_hours + o.worked_hours) for o in [p]+p.others))
+            print(" * {:20s} ({} staffers with {} hours)".format(p.full_name(), len(p.others)+1, hours_str))
 
     print()
     print("======================")
