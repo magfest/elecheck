@@ -36,6 +36,12 @@ def parse_worked(w):
         pass
         #print("Unknown WORKED value: " + w)
 
+def parse_badge_type(status):
+    if status in ("Staff", "16863825"):
+        return "Staff"
+    elif status in ("Attendee", "154973361"):
+        return "Attendee"
+
 class Attendee:
     def __init__(self, id, placeholder, first_name, last_name, email, birthdate,
                  badge_num, badge_type, ribbon, can_spam, staffing, nonshift_hours,
@@ -47,7 +53,7 @@ class Attendee:
         self.email = email
         self.birthdate = birthdate
         self.badge_num = int(badge_num) if badge_num else None
-        self.badge_type = badge_type
+        self.badge_type = parse_badge_type(badge_type)
         self.badge_status = badge_status
         self.ribbon = ribbon
         self.can_spam = parse_bool(can_spam)
@@ -144,17 +150,22 @@ def load_jobs(filename):
 def load_shifts(filename, attendees, jobs):
     res = {}
     with open(filename, newline='') as f:
+        counter = Counter()
         job_reader = csv.DictReader(f)
         for row in job_reader:
             id, job_id, attendee_id, *rest = row.values()
+            counter[rest[0]] += 1
 
             res[id] = Shift(id, jobs[job_id], attendees[attendee_id], *rest)
+
+        #print("Values for WORKED field:")
+        #print(counter)
 
     return res
 
 def dump_attendees(filename, attendees):
     with open(filename, 'w', newline='') as f:
-        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'nonshift_hours', 'worked_hours',
+        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'badge_type', 'badge_status', 'nonshift_hours', 'worked_hours',
                   'maybe_worked_hours', 'worked_other_event', 'review']
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction='ignore')
         writer.writeheader()
@@ -165,6 +176,8 @@ def dump_attendees(filename, attendees):
                 'last_name': attendee.last_name,
                 'email': attendee.email,
                 'can_spam': attendee.can_spam,
+                'badge_type': attendee.badge_type,
+                'badge_status': attendee.badge_status,
                 'nonshift_hours': attendee.nonshift_hours,
                 'worked_hours': attendee.worked_hours(),
                 'maybe_worked_hours': attendee.maybe_worked_hours(),

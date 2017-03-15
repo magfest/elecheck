@@ -6,13 +6,15 @@ from collections import Counter
 
 
 class Person:
-    def __init__(self, id, first_name, last_name, email, can_spam, nonshift_hours, worked_hours,
+    def __init__(self, id, first_name, last_name, email, can_spam, badge_type, badge_status, nonshift_hours, worked_hours,
                  maybe_worked_hours, worked_other_event, review):
         self.id = id
         self.first_name = first_name.lower().title()
         self.last_name = last_name.lower().title()
         self.email = email.lower()
         self.can_spam = (can_spam == 'True')
+        self.badge_type = badge_type
+        self.badge_status = badge_status
         self.nonshift_hours = float(nonshift_hours)
         self.worked_hours = float(worked_hours)
         self.maybe_worked_hours = (maybe_worked_hours == 'True')
@@ -110,7 +112,7 @@ def main():
     ineligible = 0
 
     with open("final_eligible.csv", "w", newline='') as f:
-        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'nonshift_hours', 'worked_hours',
+        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'badge_type', 'badge_status' 'nonshift_hours', 'worked_hours',
                   'maybe_worked_hours', 'worked_other_event', 'review']
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
@@ -123,6 +125,8 @@ def main():
                     'last_name': person.last_name,
                     'email': person.email,
                     'can_spam': person.can_spam,
+                    'badge_type': person.badge_type,
+                    'badge_status': person.badge_status,
                     'nonshift_hours': person.nonshift_hours,
                     'worked_hours': person.worked_hours,
                     'maybe_worked_hours': person.maybe_worked_hours,
@@ -162,6 +166,31 @@ def main():
                 print(" * {} (eligible: {})".format(person.email, person.eligible()))
             print()
 
+    suspicious = 0
+    with open("suspicious.csv", "w", newline='') as f:
+        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'nonshift_hours', 'worked_hours',
+                  'maybe_worked_hours', 'worked_other_event', 'review']
+        writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+
+        for person in deduped.values():
+            if not person.eligible() and any((o.badge_type == 'Staff' for o in [person] + person.others)):
+                suspicious += 1
+                writer.writerow({
+                    'id': person.id,
+                    'first_name': person.first_name,
+                    'last_name': person.last_name,
+                    'email': person.email,
+                    'can_spam': person.can_spam,
+                    'badge_type': person.badge_type,
+                    'badge_status': person.badge_status,
+                    'nonshift_hours': person.nonshift_hours,
+                    'worked_hours': person.worked_hours,
+                    'maybe_worked_hours': person.maybe_worked_hours,
+                    'worked_other_event': person.worked_other_event,
+                    'review': person.review
+                })
+    print("Wrote {} ineligible volunteers who were marked as staff to 'suspicious.csv'".format(suspicious))
 
 if __name__ == "__main__":
     main()
