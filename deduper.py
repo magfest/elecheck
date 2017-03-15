@@ -112,7 +112,7 @@ def main():
     ineligible = 0
 
     with open("final_eligible.csv", "w", newline='') as f:
-        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'badge_type', 'badge_status' 'nonshift_hours', 'worked_hours',
+        fields = ['id', 'first_name', 'last_name', 'email', 'can_spam', 'badge_type', 'badge_status', 'nonshift_hours', 'worked_hours',
                   'maybe_worked_hours', 'worked_other_event', 'review']
         writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
