@@ -76,12 +76,12 @@ class Attendee:
         return len([s for s in self.shifts if s.worked]) / len(self.shifts)
 
     def worked_hours(self):
-        return sum((shift.job.hours() for shift in self.shifts if shift.worked))
+        return sum((shift.job.hours() for shift in self.shifts if shift.worked)) + self.nonshift_hours
 
     def maybe_worked_hours(self):
         # This counts hours that have been marked off as though they were worked, in case someone
         # would be eligible but their hours just haven't been marked off
-        return sum((shift.job.hours() for shift in self.shifts if shift.worked or shift.worked is None))
+        return sum((shift.job.hours() for shift in self.shifts if shift.worked or shift.worked is None)) + self.nonshift_hours
 
     def eligible(self):
         return self.worked_hours() >= 18
